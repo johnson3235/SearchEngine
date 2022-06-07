@@ -1,0 +1,217 @@
+import math
+from sklearn.feature_extraction import DictVectorizer
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords, webtext
+from nltk.stem import PorterStemmer
+import os
+import pandas as ps
+from sklearn.metrics.pairwise import cosine_similarity
+
+
+
+#global varibles
+path="C:/Users/Alienware/PycharmProjects/pythonProject1/venv"
+stemmer = PorterStemmer()
+pos_index = {}
+fileno = 1
+fileno2 = 1
+df=0
+idf=0
+tfw=0
+file_map = {}
+string=[]
+list_of_top=[]
+list_of_length=[]
+list_of_similarty=[]
+#global varibles
+
+#functions
+def get_key(val):
+    for key, value in tfidf.vocabulary_.items():
+        if val == value:
+            return key
+    return "key doesn't exist"
+
+def token_stopwords (str):
+   english_stop = set(stopwords.words('english'))
+   tokens = word_tokenize(str.lower())
+   lists=[word for word in tokens if word not in english_stop]
+   return lists
+
+def get_sum_index(list):
+    x = list[1].keys()
+    return len(x)
+
+
+
+def sum_tfidf(result):
+    j= 0
+    i=0
+    query=((result.shape[0])-1)
+    while j < (len(string) - 1):
+      sum = 0
+      i = 0
+      while i < result.shape[1]:
+         sum = sum + ((result[j, i])* result[query,i])
+         i = i + 1
+      list_of_top.append(sum)
+      j = j + 1
+
+
+
+def get_length(result):
+    i=0
+    while i < result.shape[0]:
+        j = 0
+        sum = 0
+        while j < result.shape[1]:
+            sum = sum + (result[i, j] * result[i, j])
+            j = j + 1
+        i = i + 1
+        list_of_length.append(math.sqrt(sum))
+
+
+def get_similarty(result):
+    i = 0
+    query = ((result.shape[0]) - 1)
+    while i < (result.shape[0]-1):
+        sum = 0
+        sum = list_of_top[i] / (list_of_length[i]*list_of_length[query])
+        i = i + 1
+        list_of_similarty.append(sum)
+
+
+#functions
+
+if __name__ == '__main__':
+#Start Step 1
+#finding document in this path / open them / get tokens then remove stop words
+    for file in os.listdir(path):
+        if file.endswith(".txt"):
+            fileno2=fileno2+1
+            doc_path = f"{path}/{file}"
+            with open(doc_path, 'r') as f:
+               english_stop = set(stopwords.words('english'))
+               filename=f.read()
+               string.append(filename)
+               tokens = word_tokenize(filename)
+               token_file = [word for word in tokens if word not in english_stop]
+               for pos,term in enumerate(token_file):
+                   term =term.lower()
+                   if term in pos_index:
+                       pos_index[term][0]=pos_index[term][0]+1
+                       if fileno in pos_index[term][1]:
+                           pos_index[term][1][fileno].append(pos)
+                       else:
+                           pos_index[term][1][fileno]=[pos]
+                   else:
+                       pos_index[term]=[]
+                       pos_index[term].append(1)
+                       pos_index[term].append({})
+                       pos_index[term][1][fileno]=[pos]
+
+               file_map[fileno]=file
+               fileno+=1
+# end of step 1
+
+#Start Step 2
+#Enter Query to Get Positional Index From documents
+x=1
+while(x):
+    Query='antony brutus caeser '.lower()
+    str=token_stopwords(Query)
+    i=0
+    print("\nPositional Index:")
+    while(i<len(str)):
+      if str[i] in pos_index:
+        sample_pos_index = pos_index[str[i]]
+        df=get_sum_index(sample_pos_index)
+        file_list = sample_pos_index[1]
+        print("------------------------------------------------------")
+        print('< '+str[i] +' , '+format(sample_pos_index[0]))
+        for fileno, positions in file_list.items():
+             print('doc '+format(fileno)+' : '+file_map[fileno], positions)
+        print('> ')
+        print('Document frequancy : '+ format(df))
+        print('term frequancy : '+format(sample_pos_index[0]))
+
+        print("------------------------------------------------------")
+      i=i+1
+    else:
+        print("The query is not found")
+    x=int(input("Enter 1 to continue searching or 0 to exit."))
+#End of step 2
+string.append((Query))
+sttr=token_stopwords(Query.lower())
+tfidf = TfidfVectorizer()
+result = tfidf.fit_transform(string)
+list_match=[]
+tfidf.get_feature_names()
+print('\nidf values:')
+i=0
+while i<len(sttr):
+  j=0
+  while j<len(tfidf.get_feature_names()):
+     if sttr[i]== tfidf.get_feature_names()[j]:
+        print(sttr[i], ':', tfidf.idf_[j])
+        list_match.append(tfidf.vocabulary_[sttr[i]])
+     j=j+1
+  i=i+1
+
+df=ps.DataFrame(result.toarray())
+#print(df)
+#print(ps.DataFrame(df[list_match]))
+print(ps.DataFrame(df))
+
+# to get top
+sum_tfidf(result)
+# to get top
+
+#get length of documents
+get_length(result)
+#get length of documents
+
+#get similarty of documents
+get_similarty(result)
+#get similarty of documents
+print(list_of_top)
+print(list_of_length)
+print(list_of_similarty)
+
+print(fileno)
+#print(cosine_similarity(df[0].array.reshape(-1,1), df[1].array.reshape(-1,1)))
+#print('word indexes :')
+#print([word for word in tfidf.vocabulary_ if word in list_match])
+
+#normaliz (car) = tf.idf (doc1) * tf.idf (query) / length (doc1) * length (query)
+#print(result.shape[0])
+
+
+
+
+
+
+def sum_tfidf(result,d1):
+    i = 0
+    query=((result.shape[0])-1)
+    sum = 0
+    while i < result.shape[1]:
+        sum = sum + ((result[d1, i])* result[query,i])
+        i = i + 1
+    list_of_top.append(sum)
+
+
+def sum_tfidf(result):
+    j= 0
+    i=0
+    query=((result.shape[0])-1)
+    while j < (len(string) - 1):
+      sum = 0
+      i = 0
+      while i < result.shape[1]:
+         sum = sum + ((result[j, i])* result[query,i])
+         i = i + 1
+      list_of_top.append(sum)
+      j = j + 1
